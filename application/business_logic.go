@@ -6,19 +6,16 @@ import (
 
 type OmegaDocController struct {
 	finder domain.DocFinder
-	xtrctr domain.DocExtractor
 	parser domain.DocParser
 	placer domain.DocPlacer
 }
 
 func NewController(
 	finder domain.DocFinder,
-	xtrctr domain.DocExtractor,
 	parser domain.DocParser,
 	placer domain.DocPlacer) OmegaDocController {
 	return OmegaDocController{
 		finder: finder,
-		xtrctr: xtrctr,
 		parser: parser,
 		placer: placer,
 	}
@@ -30,24 +27,13 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 		return err
 	}
 
-	sodoc := make(map[string][]string)
+	odocs := []domain.OmegaDoc{}
 	for srcpath, rdr := range readers {
-		extracts, err := odcc.xtrctr.ExtractDocs(rdr)
+		newodocs, err := odcc.parser.ParseDoc(srcpath, rdr)
 		if err != nil {
 			return err
 		}
-		sodoc[srcpath] = extracts
-	}
-
-	odocs := []domain.OmegaDoc{}
-	for srcpath, rawodocs := range sodoc {
-		for _, rawodoc := range rawodocs {
-			odoc, err := odcc.parser.ParseDoc(srcpath, rawodoc)
-			if err != nil {
-				return err
-			}
-			odocs = append(odocs, odoc)
-		}
+		odocs = append(odocs, newodocs...)
 	}
 
 	for _, odoc := range odocs {

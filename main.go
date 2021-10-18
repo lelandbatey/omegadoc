@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/lelandbatey/omegadoc/application"
 	//"github.com/lelandbatey/omegadoc/domain"
+	"github.com/lelandbatey/omegadoc/docfinder"
 	"github.com/lelandbatey/omegadoc/domain/noops"
 
 	"github.com/spf13/pflag"
@@ -22,7 +22,7 @@ var (
 	binName            = filepath.Base(os.Args[0])
 	longDesc           = `OmegaDoc provides one solution to the documentation problems even medium-size
 organizations face. We'd like to keep documentation located nearby the things
-their documenting, but doing that means actually finding and reading that
+they're documenting, but doing that means actually finding and reading that
 documentation requires going to where it's located across potentially many
 codebases. OmegaDoc is meant to solve this by bringing together documentation
 from anywhere, text files of any type, into a single collected directory.
@@ -71,7 +71,7 @@ func main() {
 	pflag.Parse()
 
 	if *helpFlag {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
 	}
 
@@ -85,9 +85,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	docfndr := docfinder.NewDocFinder()
 	odcc := application.NewController(
-		noops.NoOpDocFinder{},
-		noops.NoOpDocExtractor{},
+		docfndr,
 		noops.NoOpDocParser{},
 		noops.NoOpDocPlacer{},
 	)

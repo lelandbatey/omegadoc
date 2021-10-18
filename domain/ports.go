@@ -16,15 +16,9 @@ type DocFinder interface {
 	FindReaders(path string) (map[string]io.Reader, error)
 }
 
-// DocExtractor extracts all the raw OmegaDoc contents from the provided
-// io.Reader.
-type DocExtractor interface {
-	ExtractDocs(reader io.Reader) ([]string, error)
-}
-
-// Parses the contents of the OmegaDoc to create the OmegaDoc struct.
+// Parses the contents of the file to extract all the OmegaDocs in that file.
 type DocParser interface {
-	ParseDoc(srcpath, contents string) (OmegaDoc, error)
+	ParseDoc(srcpath string, data io.Reader) ([]OmegaDoc, error)
 }
 
 type DocPlacer interface {
