@@ -1,13 +1,16 @@
 package docfinder
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/lelandbatey/omegadoc/domain"
+	//log "github.com/sirupsen/logrus"
 )
 
 type docfinder struct {
@@ -51,7 +54,7 @@ func grepFind(srcpath string, ignorepaths ...string) ([]string, error) {
 	var matches []string = []string{}
 	{
 		// TODO ignore the paths passed in ignorepaths. Right now no files are ignored.
-		cmd := exec.Command("grep",
+		cmds := []string{"grep",
 			// If 'type' passed to `--binary-files=type` is 'without-match', when grep
 			// discovers null input binary data it assumes that the rest of the file
 			// does not match; this is equivalent to the -I option.
@@ -62,23 +65,33 @@ func grepFind(srcpath string, ignorepaths ...string) ([]string, error) {
 			// stops upon first match.
 			// https://www.gnu.org/software/grep/manual/grep.html#index-_002dl
 			"--files-with-matches",
-			"-r", srcpath, domain.START_OMEGADOC)
+			regexp.QuoteMeta(domain.START_OMEGADOC),
+			"-r", srcpath,
+		}
+		cmd := exec.Command(cmds[0], cmds[1:]...)
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot create stdout pipe of grep find: %w", err)
 		}
-		err = cmd.Run()
+		//stderr, err := cmd.StderrPipe()
+		//if err != nil {
+		//	return nil, fmt.Errorf("cannot create stderr pipe of grep find: %w", err)
+		//}
+		err = cmd.Start()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot start grep: %w", err)
 		}
 		all, err := io.ReadAll(stdout)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot read all of stdout from running grep: %w", err)
 		}
 		for _, line := range strings.Split(string(all), "\n") {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
 			foundp, err := filepath.Abs(line)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("cannot create absolute path of line %q: %w", line, err)
 			}
 			matches = append(matches, foundp)
 		}

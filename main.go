@@ -7,19 +7,18 @@ import (
 	"path/filepath"
 
 	"github.com/lelandbatey/omegadoc/application"
-	//"github.com/lelandbatey/omegadoc/domain"
 	"github.com/lelandbatey/omegadoc/docfinder"
 	"github.com/lelandbatey/omegadoc/docparser"
 	"github.com/lelandbatey/omegadoc/docplacer"
-	"github.com/lelandbatey/omegadoc/domain/noops"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 )
 
 var (
 	defaultOmegadocOut = path.Join(os.TempDir(), "omegadoc")
-	outputpath         = pflag.StringP("output-path", "o", defaultOmegadocOut, "Path to the directory in which to collect all found OmegaDocs")
-	scanpath           = pflag.StringP("input-search-path", "i", "./", "Path to the file or directory to search for OmegaDocs")
+	outputpath         = pflag.StringP("output-path", "o", "", "Path to the directory in which to collect all found OmegaDocs")
+	scanpath           = pflag.StringP("input-search-path", "i", "", "Path to the file or directory to search for OmegaDocs")
 	helpFlag           = pflag.BoolP("help", "h", false, "Print usage")
 	binName            = filepath.Base(os.Args[0])
 	longDesc           = `OmegaDoc provides one solution to the documentation problems even medium-size
@@ -88,6 +87,21 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *scanpath == "" && *outputpath == "" {
+		fmt.Fprintf(os.Stderr, "\nError: you must provide at least one of --input-search-path or --output-path\n")
+		pflag.Usage()
+		os.Exit(0)
+	}
+
+	if *scanpath == "" {
+		*scanpath = "./"
+		log.Infof("--input-search-path not provided, defaulting to %s", *scanpath)
+	}
+	if *outputpath == "" {
+		*outputpath = defaultOmegadocOut
+		log.Infof("--output-path not provided, defaulting to %s", *outputpath)
+	}
+
 	inppath, err := filepath.Abs(*scanpath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -98,6 +112,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	log.SetLevel(log.DebugLevel)
+
 	docfndr := docfinder.NewDocFinder()
 	docprsr := docparser.NewDocParser()
 	docplcr := docplacer.NewDocPlacer()
@@ -107,5 +123,9 @@ func main() {
 		docplcr,
 	)
 
-	fmt.Printf("Initial omegadoc: %v\n", odcc.GenerateOmegaTree(inppath, outpath))
+	err = odcc.GenerateOmegaTree(inppath, outpath)
+	if err != nil {
+		log.Errorf("Error encountered while attempting to generate OmegaDocs: %q", err.Error())
+		os.Exit(1)
+	}
 }
