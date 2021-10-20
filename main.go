@@ -9,6 +9,8 @@ import (
 	"github.com/lelandbatey/omegadoc/application"
 	//"github.com/lelandbatey/omegadoc/domain"
 	"github.com/lelandbatey/omegadoc/docfinder"
+	"github.com/lelandbatey/omegadoc/docparser"
+	"github.com/lelandbatey/omegadoc/docplacer"
 	"github.com/lelandbatey/omegadoc/domain/noops"
 
 	"github.com/spf13/pflag"
@@ -54,6 +56,17 @@ An example of an OmegaDoc then is like so:
 
 Additionally, if the file ends before the delimiting identifier is reached,
 that is considered to be the end of the omegadoc.
+
+If a file contains an "ignore" directive in its bytes before an OmegaDoc
+opening statement, then that file will be considered to have NO OmegaDocs in
+it, even if it otherwise contains one or more valid OmegaDocs. If a file
+contains an "ignore" directive after one or more valid OmegaDoc directives,
+then that "ignore" directive will itself be ignored.
+
+An "ignore" directive is the following string, present anywhere in the bytes of
+a file:
+
+    #!/usr/bin/env omegadoc ignore-this-file
 `
 )
 
@@ -86,10 +99,12 @@ func main() {
 		os.Exit(1)
 	}
 	docfndr := docfinder.NewDocFinder()
+	docprsr := docparser.NewDocParser()
+	docplcr := docplacer.NewDocPlacer()
 	odcc := application.NewController(
 		docfndr,
-		noops.NoOpDocParser{},
-		noops.NoOpDocPlacer{},
+		docprsr,
+		docplcr,
 	)
 
 	fmt.Printf("Initial omegadoc: %v\n", odcc.GenerateOmegaTree(inppath, outpath))
