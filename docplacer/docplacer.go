@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/lelandbatey/omegadoc/domain"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func NewDocPlacer() domain.DocPlacer {
@@ -30,7 +32,8 @@ func (dpl docPlacer) PlaceDoc(outpath string, odoc domain.OmegaDoc) error {
 		reltpath = strings.TrimPrefix(reltpath, "/")
 	}
 	finpath := path.Join(outpath, reltpath)
-	finbase := path.Base(finpath)
+	finbase := path.Dir(finpath)
+	log.Info("writing omegadoc to output:", finpath, finbase)
 	err := os.MkdirAll(finbase, 0775)
 	if err != nil {
 		return fmt.Errorf("cannot create parent directories for '%q': %w", finbase, err)

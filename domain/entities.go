@@ -109,5 +109,10 @@ documentation.
 Of course, to do this I have to write my documentation in the form of
 OmegaDocs, but all that means is adding a few lines to existing docs.
 
+Also, I recommend using Pandoc and the following command to render everything
+to HTML for your browsing pleasure:
+
+	find ./<OUTPUT FOLDER HERE> -iname "*.md" -type f -exec sh -c 'pandoc "${0}" -o "${0%.md}.html"' {} \;
+
 ENDDOC
 */
