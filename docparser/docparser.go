@@ -40,9 +40,10 @@ func NewDocParser() domain.DocParser {
 // parseOdoc tracks all the data necessary for us to parse the document, and
 // when complete may be turned into a "real" OmegaDoc
 type parseOdoc struct {
-	SourceFilePath string
-	DestFilePath   []rune
-	Contents       []rune
+	SourceFilePath  string
+	DestFilePath    []rune
+	Contents        []rune
+	StartLineNumber int
 	//HTTPUrl string
 }
 
@@ -56,9 +57,10 @@ func (po *parseOdoc) AppDestFP(r ...rune) {
 
 func (po *parseOdoc) MakeOmegaDoc() domain.OmegaDoc {
 	return domain.OmegaDoc{
-		SourceFilePath: po.SourceFilePath,
-		DestFilePath:   string(po.DestFilePath),
-		Contents:       string(po.Contents),
+		SourceFilePath:  po.SourceFilePath,
+		DestFilePath:    string(po.DestFilePath),
+		Contents:        string(po.Contents),
+		StartLineNumber: po.StartLineNumber,
 	}
 }
 
@@ -70,7 +72,7 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 	for _, od := range odocs {
 		od.HTTPUrl, err = df.urlfinder.GetURL(od.SourceFilePath, 1)
 		if err != nil {
-			log.Warnf("cannot find URL for document %q: %w", od.SourceFilePath, err)
+			log.Warnf("cannot find URL for document %q: %v", od.SourceFilePath, err)
 		}
 	}
 	return odocs, nil
@@ -84,7 +86,8 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 // removal may require a full lexer/parser.
 func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
 	var odocs []domain.OmegaDoc = []domain.OmegaDoc{}
-	rdr := bufio.NewReader(data)
+	brdr := bufio.NewReader(data)
+	rdr := linetracker{brdr, 0}
 
 	// Outside of odoc
 	// Inside OmegaDoc opening statement
@@ -140,6 +143,7 @@ func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 							// Yes, this is a beginning statement. Now gather
 							// the delimiting identifier
 							if beginpos == len(begindoc_magicrunes) {
+								curodoc.StartLineNumber = rdr.LineNumber()
 								for {
 									r, _, err = rdr.ReadRune()
 									if err != nil {

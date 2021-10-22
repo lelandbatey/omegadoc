@@ -101,7 +101,9 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 		break
 	}
 	if repourl != "" && hash != "" && gitfilepath != "" {
-		return fmt.Sprintf("%s/tree/%s%s#L%d", repourl, hash, gitfilepath, lineno), nil
+		// have to add 1 to the line numbers because when displaying code you
+		// start from line 1, not line 0
+		return fmt.Sprintf("%s/tree/%s%s#L%d", repourl, hash, gitfilepath, lineno+1), nil
 	}
 	return "", nil
 }
