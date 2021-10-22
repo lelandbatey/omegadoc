@@ -9,6 +9,8 @@ import (
 	"unicode"
 
 	"github.com/lelandbatey/omegadoc/domain"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // RequiredParseError represents an error which cannot be skipped and which is
@@ -26,10 +28,13 @@ func (e *RequiredParseError) Unwrap() error {
 }
 
 type docfinder struct {
+	urlfinder gitURLFinder
 }
 
 func NewDocParser() domain.DocParser {
-	return docfinder{}
+	return docfinder{
+		urlfinder: newGitURLFinder(),
+	}
 }
 
 // parseOdoc tracks all the data necessary for us to parse the document, and
@@ -42,9 +47,6 @@ type parseOdoc struct {
 }
 
 func (po *parseOdoc) AppCont(r ...rune) {
-	//for idx, x := range r {
-	//fmt.Printf("Appending rune to Contents: %s %5v %d\n", string(x), x, idx)
-	//}
 	po.Contents = append(po.Contents, r...)
 }
 
@@ -60,13 +62,27 @@ func (po *parseOdoc) MakeOmegaDoc() domain.OmegaDoc {
 	}
 }
 
+func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
+	odocs, err := df.parseDoc(srcpath, data)
+	if err != nil {
+		return nil, err
+	}
+	for _, od := range odocs {
+		od.HTTPUrl, err = df.urlfinder.GetURL(od.SourceFilePath, 1)
+		if err != nil {
+			log.Warnf("cannot find URL for document %q: %w", od.SourceFilePath, err)
+		}
+	}
+	return odocs, nil
+}
+
 // ParseDoc for docfinder parses a text file and extracts all OmegaDocs present
 // in the file. This is currently implemented as a simple direct parser,
 // without being broken down into scanner/lexer since the language is so
 // simple. In the future this implementation may need to be further broken down
 // though, as features such as automatic indentation removal or line-prefix
 // removal may require a full lexer/parser.
-func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
+func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
 	var odocs []domain.OmegaDoc = []domain.OmegaDoc{}
 	rdr := bufio.NewReader(data)
 
@@ -107,13 +123,11 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 		// "beginning statement"
 		if r == common_magicrunes[0] {
 			var commonpos int = 0
-			//fmt.Printf("commonpos: %v\n", commonpos)
 			for {
 				commonpos += 1
 				// We reached the end of the common_prefix, now figure out if
 				// it's an ignoredoc or a beginning statement
 				if commonpos == len(common_magicrunes) {
-					//fmt.Printf("Reached end of common prefix\n")
 					r, _, err = rdr.ReadRune()
 					if err != nil {
 						return deriveCorrectExit(err)
@@ -121,14 +135,11 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 					// It could be a "beginning statement"
 					if r == begindoc_magicrunes[0] {
 						beginpos := 0
-						//fmt.Printf("first beginpos: %v\n", beginpos)
 						for {
 							beginpos += 1
-							//fmt.Printf("beginpos: %v\n", beginpos)
 							// Yes, this is a beginning statement. Now gather
 							// the delimiting identifier
 							if beginpos == len(begindoc_magicrunes) {
-								//fmt.Printf("Reached end of beginning statement\n")
 								for {
 									r, _, err = rdr.ReadRune()
 									if err != nil {

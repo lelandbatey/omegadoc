@@ -33,7 +33,7 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 		return err
 	}
 	for srcpath := range readers {
-		log.Info("Found reader", srcpath)
+		log.Infof("Found reader: %s", srcpath)
 	}
 
 	odocs := []domain.OmegaDoc{}
