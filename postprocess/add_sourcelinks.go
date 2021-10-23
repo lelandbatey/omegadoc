@@ -1,6 +1,8 @@
 package postprocess
 
 import (
+	"fmt"
+
 	"github.com/lelandbatey/omegadoc/domain"
 )
 
@@ -48,5 +50,13 @@ necessary changes to documentation.
 }
 
 func (sla SourceLinkAdder) Postprocess(odocs []domain.OmegaDoc) ([]domain.OmegaDoc, error) {
-	return odocs, nil
+	newdocs := []domain.OmegaDoc{}
+	for _, odoc := range odocs {
+		nodoc := domain.OmegaDoc(odoc)
+		if nodoc.HTTPUrl != "" {
+			nodoc.Contents = odoc.Contents + fmt.Sprintf("\n\n[Link to the source of this document: %s](%s)\n", nodoc.HTTPUrl, nodoc.HTTPUrl)
+		}
+		newdocs = append(newdocs, nodoc)
+	}
+	return newdocs, nil
 }

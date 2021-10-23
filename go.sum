@@ -43,6 +43,8 @@ github.com/Kunde21/markdownfmt v0.1.6 h1:ElQ4ZsxyCfzAXo3EKnFTTlvedLjLggQ1BJjsgY9
 github.com/Kunde21/markdownfmt v0.1.6/go.mod h1:klKoOJ+0s67M+fZcA05yDM1iqJETZG3FmjeujNkzh4I=
 github.com/Kunde21/markdownfmt/v2 v2.1.0 h1:lzLCOy/4xFJwWzyF2o1U+RGJb+GoOVWJ6hNfoew2HPc=
 github.com/Kunde21/markdownfmt/v2 v2.1.0/go.mod h1:XK8I51ZbmTEjRizk8Uzu2sC3h8F0x4PM3RXGkNXObkA=
+github.com/Kunde21/markdownfmt/v2 v2.1.1-0.20210819095016-f85609284a50 h1:PWJgSovAcr4/qPWqOw+kTOkPfY08jBeBQ50dKQz2490=
+github.com/Kunde21/markdownfmt/v2 v2.1.1-0.20210819095016-f85609284a50/go.mod h1:LFJueuHZej/Z7Xhqh/XgClfkDjZiiEBOLVTt1Duq1r0=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16 h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=
 github.com/Microsoft/go-winio v0.4.16/go.mod h1:XB6nPKklQyQ7GC9LdcBEcBl8PF76WugXOPRXwdLnMv0=

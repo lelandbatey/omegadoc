@@ -65,17 +65,22 @@ func (po *parseOdoc) MakeOmegaDoc() domain.OmegaDoc {
 }
 
 func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
+	l := log.WithField("srcpath", srcpath)
 	odocs, err := df.parseDoc(srcpath, data)
 	if err != nil {
 		return nil, err
 	}
+	newodocs := []domain.OmegaDoc{}
 	for _, od := range odocs {
-		od.HTTPUrl, err = df.urlfinder.GetURL(od.SourceFilePath, 1)
+		url, err := df.urlfinder.GetURL(od.SourceFilePath, od.StartLineNumber)
 		if err != nil {
-			log.Warnf("cannot find URL for document %q: %v", od.SourceFilePath, err)
+			l.Warnf("cannot find URL for document %q: %v", od.SourceFilePath, err)
 		}
+		od.HTTPUrl = url
+		l.WithField("url", url).Info("URL found")
+		newodocs = append(newodocs, od)
 	}
-	return odocs, nil
+	return newodocs, nil
 }
 
 // ParseDoc for docfinder parses a text file and extracts all OmegaDocs present
@@ -85,6 +90,7 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 // though, as features such as automatic indentation removal or line-prefix
 // removal may require a full lexer/parser.
 func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
+	l := log.WithField("srcpath", srcpath)
 	var odocs []domain.OmegaDoc = []domain.OmegaDoc{}
 	brdr := bufio.NewReader(data)
 	rdr := linetracker{brdr, 0}
@@ -144,6 +150,7 @@ func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 							// the delimiting identifier
 							if beginpos == len(begindoc_magicrunes) {
 								curodoc.StartLineNumber = rdr.LineNumber()
+								l.Infof("Line number for reader found: %d", rdr.LineNumber())
 								for {
 									r, _, err = rdr.ReadRune()
 									if err != nil {

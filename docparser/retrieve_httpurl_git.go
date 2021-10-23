@@ -38,6 +38,7 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 	var hash string = ""
 	var gitfilepath string = ""
 	for {
+		//fmt.Printf("start\n")
 		if pth == "/" || pth == "" {
 			break
 		}
@@ -64,6 +65,7 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 		if !isgit {
 			continue
 		}
+		//fmt.Printf("middle\n")
 
 		gitfilepath = strings.TrimPrefix(filepath, pth)
 
@@ -98,6 +100,7 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 				repourl = strings.Replace(remurl, "git:", "https://", 1)
 			}
 		}
+		//fmt.Printf("All the end?\n")
 		break
 	}
 	if repourl != "" && hash != "" && gitfilepath != "" {

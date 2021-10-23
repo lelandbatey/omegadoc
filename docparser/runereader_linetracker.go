@@ -16,7 +16,7 @@ type linetracker struct {
 	lineno int
 }
 
-func (lt linetracker) ReadRune() (rune, int, error) {
+func (lt *linetracker) ReadRune() (rune, int, error) {
 	r, s, err := lt.brdr.ReadRune()
 	if r == '\n' {
 		lt.lineno++
@@ -24,6 +24,6 @@ func (lt linetracker) ReadRune() (rune, int, error) {
 	return r, s, err
 }
 
-func (lt linetracker) LineNumber() int {
+func (lt *linetracker) LineNumber() int {
 	return lt.lineno
 }

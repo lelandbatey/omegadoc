@@ -35,6 +35,11 @@ pages will not be modified.
 func (mlr MarkdownLinkRewriter) Postprocess(odocs []domain.OmegaDoc) ([]domain.OmegaDoc, error) {
 	newdocs := []domain.OmegaDoc{}
 	for _, odoc := range odocs {
+		// TODO submit a PR fixing the "trailing two spaces on a line" behavior
+		// in the Kunde21/markdownfmt renderer, as that's handling things
+		// incorrectly. The workaround for now is that I'll have to make sure
+		// that the HTML is always rendered with the "HardWraps" option while
+		// this markdown renderer _avoids_ using the "SoftWraps" option.
 		fr := fakerender{markdown.NewRenderer()}
 		g := goldmark.New(
 			goldmark.WithExtensions(extension.GFM),
@@ -60,6 +65,7 @@ type fakerender struct {
 
 func (f fakerender) Render(w io.Writer, source []byte, node ast.Node) error {
 	// kickoff replacing all links with Links that have their '.md' rewritten to be '.html'
+	//node.Dump(source, 0)
 	err := ast.Walk(node, replaceLinks)
 	if err != nil {
 		return err

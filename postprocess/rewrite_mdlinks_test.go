@@ -10,13 +10,36 @@ import (
 func TestMarkdownLinkRewriter(t *testing.T) {
 	ppr := MarkdownLinkRewriter{}
 
-	docs := []domain.OmegaDoc{
-		{
-			Contents: "hello [foo](zap/bar.md)\n",
-		},
+	type test struct {
+		odocs    []domain.OmegaDoc
+		expected string
 	}
 
-	newdocs, err := ppr.Postprocess(docs)
-	require.NoError(t, err)
-	require.Equal(t, "hello [foo](zap/bar.html)\n", newdocs[0].Contents)
+	for _, tst := range []test{
+		{
+			odocs:    []domain.OmegaDoc{{Contents: "hello [foo](zap/bar.md)\n"}},
+			expected: "hello [foo](zap/bar.html)\n",
+		},
+		// The "two spaces before newline" case is broken upstream in Kunde21.
+		// {
+		// 	odocs:    []domain.OmegaDoc{{Contents: "hello  \nwhat\n[foo](zap/bar.md)\n"}},
+		// 	expected: "hello  \nwhat\n[foo](zap/bar.html)\n",
+		// },
+		{
+			odocs:    []domain.OmegaDoc{{Contents: "hello friends\n\n[foo](zap/bar.md)\n"}},
+			expected: "hello friends\n\n[foo](zap/bar.html)\n",
+		},
+		{
+			odocs:    []domain.OmegaDoc{{Contents: "[foo](zap/bar.html)\n"}},
+			expected: "[foo](zap/bar.html)\n",
+		},
+		{
+			odocs:    []domain.OmegaDoc{{Contents: "[foo](zap/bar.md.html)\n"}},
+			expected: "[foo](zap/bar.md.html)\n",
+		},
+	} {
+		newdocs, err := ppr.Postprocess(tst.odocs)
+		require.NoError(t, err)
+		require.Equal(t, tst.expected, newdocs[0].Contents)
+	}
 }
