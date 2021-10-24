@@ -24,3 +24,9 @@ type DocParser interface {
 type DocPlacer interface {
 	PlaceDoc(outpath string, odoc OmegaDoc) error
 }
+
+type Postprocessor interface {
+	Postprocess([]OmegaDoc) ([]OmegaDoc, error)
+	Name() string
+	Description() string
+}

@@ -12,16 +12,19 @@ import (
 type OmegaDocController struct {
 	finder domain.DocFinder
 	parser domain.DocParser
+	pprocs []domain.Postprocessor
 	placer domain.DocPlacer
 }
 
 func NewController(
 	finder domain.DocFinder,
 	parser domain.DocParser,
+	pprocs []domain.Postprocessor,
 	placer domain.DocPlacer) OmegaDocController {
 	return OmegaDocController{
 		finder: finder,
 		parser: parser,
+		pprocs: pprocs,
 		placer: placer,
 	}
 }
@@ -33,7 +36,7 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 		return err
 	}
 	for srcpath := range readers {
-		log.Info("Found reader", srcpath)
+		log.Infof("Found reader: %s", srcpath)
 	}
 
 	odocs := []domain.OmegaDoc{}
@@ -43,6 +46,13 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 			return err
 		}
 		odocs = append(odocs, newodocs...)
+	}
+
+	for _, pproc := range odcc.pprocs {
+		odocs, err = pproc.Postprocess(odocs)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(readers) > len(odocs) {

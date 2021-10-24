@@ -10,6 +10,7 @@ import (
 	"github.com/lelandbatey/omegadoc/docfinder"
 	"github.com/lelandbatey/omegadoc/docparser"
 	"github.com/lelandbatey/omegadoc/docplacer"
+	"github.com/lelandbatey/omegadoc/postprocess"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -120,6 +121,7 @@ func main() {
 	odcc := application.NewController(
 		docfndr,
 		docprsr,
+		postprocess.GetPostprocessors(),
 		docplcr,
 	)
 

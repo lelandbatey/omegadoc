@@ -10,6 +10,8 @@ type OmegaDoc struct {
 	// The contents of the OmegaDoc, found between the opening statement (which
 	// defines the delimiting identifier) and the delimiting identifier.
 	Contents string
+	// The line within SourceFilePath on which the OmegaDoc starts
+	StartLineNumber int
 	// HTTPURL contains a single full HTTP URL where you can read the source of
 	// this OmegaDoc in your web-browser. This URL is not present in the
 	// original document and if present will have been derived from the git
