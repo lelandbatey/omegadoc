@@ -2,23 +2,29 @@ package postprocess
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lelandbatey/omegadoc/domain"
 )
 
 func init() {
-	RegisterPostprocessor(SourceLinkAdder{})
+	RegisterPostprocessor(SourceLinkAdder{rank: 50})
 }
 
 type SourceLinkAdder struct {
+	rank int
+}
+
+func (sla SourceLinkAdder) Rank() int {
+	return sla.rank
 }
 
 func (sla SourceLinkAdder) Name() string {
 	return "SourceLinkAdder"
 }
 func (sla SourceLinkAdder) Description() string {
-	// #!/usr/bin/env omegadoc ignore-this-file
-	return `SourceLinkAdder assumes that each OmegaDoc is written in markdown
+	doc := `#!/usr/bin/env omegadoc <<DELIMIDENT omegadoc/postprocessors/add_sourcelinks.md
+SourceLinkAdder assumes that each OmegaDoc is written in markdown
 format. To each OmegaDoc, it adds an HTTP link to the original source file
 which contains the Omegadoc. That way, if when reading the Omegadoc you wonder
 "where is this written? I want to add something to it..." then you may visit
@@ -46,7 +52,11 @@ a large file structure crossing many repositories, which is the exact case
 where Omegadoc is meant to be used. By having a link to the original location,
 you can _much_ more easily figure out where you need to go in order to make
 necessary changes to documentation.
+DELIMIDENT
 `
+	lines := strings.Split(doc, "\n")
+	// Trim off the in-band beginning and end of this OmegaDoc.
+	return strings.Join(lines[1:len(lines)-1], "\n")
 }
 
 func (sla SourceLinkAdder) Postprocess(odocs []domain.OmegaDoc) ([]domain.OmegaDoc, error) {

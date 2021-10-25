@@ -81,7 +81,7 @@ func (po *parseOdoc) MakeOmegaDoc() domain.OmegaDoc {
 
 func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
 	l := log.WithField("srcpath", srcpath)
-	odocs, err := df.newparse(srcpath, data)
+	odocs, err := df.parseDoc(srcpath, data)
 	if err != nil {
 		return nil, err
 	}
@@ -97,183 +97,6 @@ func (df docfinder) ParseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc,
 		newodocs = append(newodocs, od)
 	}
 	return newodocs, nil
-}
-
-// ParseDoc for docfinder parses a text file and extracts all OmegaDocs present
-// in the file. This is currently implemented as a simple direct parser,
-// without being broken down into scanner/lexer since the language is so
-// simple. In the future this implementation may need to be further broken down
-// though, as features such as automatic indentation removal or line-prefix
-// removal may require a full lexer/parser.
-func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
-	l := log.WithField("srcpath", srcpath)
-	var odocs []domain.OmegaDoc = []domain.OmegaDoc{}
-	brdr := bufio.NewReader(data)
-	rdr := &odScanner{brdr, 0, 0}
-
-	// Outside of odoc
-	// Inside OmegaDoc opening statement
-	//     Inside magic string
-	//         Inside a delimiting identifier
-	//         OR Inside an ignore directive
-	// Inside an output path
-	// Inside the OmegaDoc body
-	// Inside a closing delimiting identifier
-
-	common_magicrunes := []rune(COMMON_PREFIX)
-
-	var curodoc parseOdoc = parseOdoc{
-		SourceFilePath: srcpath,
-	}
-	var delimiting_ident []rune = []rune{}
-
-	deriveCorrectExit := func(err error) ([]domain.OmegaDoc, error) {
-		// End of file isn't necessarily an error, more a signal that we're
-		// done here.
-		if errors.Is(err, io.EOF) {
-			return odocs, nil
-		}
-		return nil, err
-	}
-	for {
-	RESET_CONTINUE:
-		r, _, err := rdr.ReadRune()
-		if err != nil {
-			return deriveCorrectExit(err)
-		}
-		// We're in the common_prefix which could be an ignore statement or
-		// "beginning statement"
-		if r == common_magicrunes[0] {
-			var commonpos int = 0
-			for {
-				commonpos += 1
-				// We reached the end of the common_prefix, now figure out if
-				// it's an ignoredoc or a beginning statement
-				if commonpos == len(common_magicrunes) {
-					r, _, err = rdr.ReadRune()
-					if err != nil {
-						return deriveCorrectExit(err)
-					}
-					// It could be a "beginning statement"
-					if r == BEGINDOC_MAGICRUNES[0] {
-						beginpos := 0
-						for {
-							beginpos += 1
-							// Yes, this is a beginning statement. Now gather
-							// the delimiting identifier
-							if beginpos == len(BEGINDOC_MAGICRUNES) {
-								curodoc.StartLineNumber = rdr.LineNumber()
-								l.Infof("Line number for reader found: %d", rdr.LineNumber())
-								for {
-									r, _, err = rdr.ReadRune()
-									if err != nil {
-										return deriveCorrectExit(err)
-									}
-									if unicode.IsSpace(r) && len(delimiting_ident) != 0 {
-										// We parsed the delimiting identifier so now we parse the output path
-										pathLoc := "before"
-										for {
-											r, _, err = rdr.ReadRune()
-											if err != nil {
-												return deriveCorrectExit(err)
-											}
-											if pathLoc == "before" {
-												if r == '\n' {
-													goto RESET_CONTINUE
-												} else if !unicode.IsSpace(r) {
-													curodoc.AppDestFP(r)
-													pathLoc = "within"
-												}
-											} else if pathLoc == "within" {
-												if r == '\n' {
-													// We parse the output path, now we're on to copying the entire document into
-													// the body.
-													tmp_pdi := []rune{}
-													dipos := 0
-													for {
-														r, _, err = rdr.ReadRune()
-														if errors.Is(err, io.EOF) {
-															// Ending the file in the middle of an OmegaDoc is considered a
-															// valid ending to the OmegaDoc.
-															odocs = append(odocs, curodoc.MakeOmegaDoc())
-															return odocs, nil
-														}
-														if err != nil {
-															return deriveCorrectExit(err)
-														}
-														if r == delimiting_ident[dipos] {
-															tmp_pdi = append(tmp_pdi, r)
-															dipos += 1
-															if dipos == len(delimiting_ident) {
-																// Found the end of this current OmegaDoc, wrap it all up and reset.
-																odocs = append(odocs, curodoc.MakeOmegaDoc())
-																curodoc = parseOdoc{
-																	SourceFilePath: srcpath,
-																}
-																goto RESET_CONTINUE
-															}
-														} else {
-															if len(tmp_pdi) > 0 {
-																curodoc.AppCont(tmp_pdi...)
-																tmp_pdi = []rune{}
-															}
-															dipos = 0
-															curodoc.AppCont(r)
-														}
-													}
-												} else {
-													curodoc.AppDestFP(r)
-												}
-											}
-										}
-									} else if unicode.IsSpace(r) && len(delimiting_ident) == 0 {
-										goto RESET_CONTINUE
-									}
-									delimiting_ident = append(delimiting_ident, r)
-								}
-							}
-							r, _, err = rdr.ReadRune()
-							if err != nil {
-								return deriveCorrectExit(err)
-							}
-							if r != BEGINDOC_MAGICRUNES[beginpos] {
-								goto RESET_CONTINUE
-							}
-						}
-					} else if r == IGNORDOC_MAGICRUNES[0] {
-						ignorpos := 0
-						for {
-							ignorpos += 1
-							// If the ignore directive comes before any OmegaDocs have been
-							// defined, then the whole file is ignored. Otherwise, the ignore
-							// directive is itself ignored.
-							if ignorpos == len(IGNORDOC_MAGICRUNES) {
-								if len(odocs) == 0 {
-									return odocs, nil
-								} else {
-									goto RESET_CONTINUE
-								}
-							}
-							r, _, err = rdr.ReadRune()
-							if err != nil {
-								return deriveCorrectExit(err)
-							}
-							if IGNORDOC_MAGICRUNES[ignorpos] != r {
-								goto RESET_CONTINUE
-							}
-						}
-					}
-				}
-				r, _, err = rdr.ReadRune()
-				if err != nil {
-					return deriveCorrectExit(err)
-				}
-				if r != common_magicrunes[commonpos] {
-					goto RESET_CONTINUE
-				}
-			}
-		}
-	}
 }
 
 const COMMON_PREFIX string = "#!/usr/bin/env omegadoc "
@@ -363,25 +186,8 @@ func (ods *odScanner) ReadRuneGroup() ([]rune, error) {
 // to both "magic strings" of OmegaDoc: the 'ignore directive' and the 'opening
 // statement'.
 func (ods *odScanner) FFTillMagicCommon() error {
-	pieces := []string{
-		"#!/usr/bin/env", " ", "omegadoc", " ",
-	}
-	pos := 0
-	for {
-		rg, err := ods.ReadRuneGroup()
-		if err != nil {
-			return err
-		}
-		if string(rg) == pieces[pos] {
-			pos++
-		} else {
-			pos = 0
-		}
-
-		if pos == len(pieces) {
-			return nil
-		}
-	}
+	_, err := readTillSentinel([]rune(COMMON_PREFIX), ods)
+	return err
 }
 
 func runesEqual(a, b []rune) bool {
@@ -419,7 +225,13 @@ func readTillSentinel(sentinel []rune, ods *odScanner) ([]rune, error) {
 	}
 }
 
-func (df docfinder) newparse(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
+// ParseDoc for docfinder parses a text file and extracts all OmegaDocs present
+// in the file. This is currently implemented as a simple direct parser,
+// without being broken down into scanner/lexer since the language is so
+// simple. In the future this implementation may need to be further broken down
+// though, as features such as automatic indentation removal or line-prefix
+// removal may require a full lexer/parser.
+func (df docfinder) parseDoc(srcpath string, data io.Reader) ([]domain.OmegaDoc, error) {
 	l := log.WithField("srcpath", srcpath)
 	var odocs []domain.OmegaDoc = []domain.OmegaDoc{}
 	brdr := bufio.NewReader(data)

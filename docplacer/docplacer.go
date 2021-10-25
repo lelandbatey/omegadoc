@@ -33,7 +33,10 @@ func (dpl docPlacer) PlaceDoc(outpath string, odoc domain.OmegaDoc) error {
 	}
 	finpath := path.Join(outpath, reltpath)
 	finbase := path.Dir(finpath)
-	log.Info("writing omegadoc to output:", finpath, finbase)
+	log.WithFields(log.Fields{
+		"finpath": finpath,
+		"finbase": finbase,
+	}).Info("writing omegadoc to output")
 	err := os.MkdirAll(finbase, 0775)
 	if err != nil {
 		return fmt.Errorf("cannot create parent directories for '%q': %w", finbase, err)

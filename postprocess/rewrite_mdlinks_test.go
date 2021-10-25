@@ -15,7 +15,7 @@ func TestMarkdownLinkRewriter(t *testing.T) {
 		expected string
 	}
 
-	for _, tst := range []test{
+	for idx, tst := range []test{
 		{
 			odocs:    []domain.OmegaDoc{{Contents: "hello [foo](zap/bar.md)\n"}},
 			expected: "hello [foo](zap/bar.html)\n",
@@ -39,7 +39,7 @@ func TestMarkdownLinkRewriter(t *testing.T) {
 		},
 	} {
 		newdocs, err := ppr.Postprocess(tst.odocs)
-		require.NoError(t, err)
-		require.Equal(t, tst.expected, newdocs[0].Contents)
+		require.NoError(t, err, "test #%d", idx)
+		require.Equal(t, tst.expected, newdocs[0].Contents, "test #%d", idx)
 	}
 }
