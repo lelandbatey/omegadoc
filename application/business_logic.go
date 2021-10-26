@@ -1,9 +1,6 @@
 package application
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/lelandbatey/omegadoc/domain"
 
 	log "github.com/sirupsen/logrus"
@@ -59,7 +56,6 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 		skipped := len(readers) - len(odocs)
 		log.Infof("Some files with potential OmegaDocs in them were ignored, count of ignored: %d, count of files with potential OmegaDocs: %d", skipped, len(readers))
 	}
-	odocs = append(odocs, MakeIndex(odocs))
 
 	for _, odoc := range odocs {
 		err := odcc.placer.PlaceDoc(outpath, odoc)
@@ -68,16 +64,4 @@ func (odcc OmegaDocController) GenerateOmegaTree(inpath, outpath string) error {
 		}
 	}
 	return nil
-}
-
-func MakeIndex(odocs []domain.OmegaDoc) domain.OmegaDoc {
-	odoc := domain.OmegaDoc{
-		DestFilePath: "index.md",
-	}
-	s := ""
-	for _, x := range odocs {
-		s += fmt.Sprintf("[%s](./%s)  \n", x.DestFilePath, strings.ReplaceAll(x.DestFilePath, ".md", ".html"))
-	}
-	odoc.Contents = s
-	return odoc
 }

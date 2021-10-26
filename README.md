@@ -23,14 +23,21 @@ Specification
 An OmegaDoc is composed of an opening statement, then an output path, then a
 body, and then a delimiting identifier, in that order. The opening statement is
 a "magic string" followed by a delimiting identifier (e.g. the word EOF or
-END), then some amount of whitespace (without newlines), then an output path.
-The output path is followed, starting on the next line, by the text to be
-quoted, and then closed by the same delimiting identifier on its own line. The
-"magic string" which marks the beginning of an OmegaDoc is the string:
+END), then some amount of whitespace (without newlines), then attributes (if any), then
+an output path.  The output path is followed, starting on the next line, by the
+text to be quoted, and then closed by the same delimiting identifier on its own
+line. The "magic string" which marks the beginning of an OmegaDoc is the
+string:
 
 	#!/usr/bin/env omegadoc <<
 
-An example of an OmegaDoc then is like so:
+Attributes are strings of key-value pairs, separated by a colon and delimited
+by spaces. As an example, the string `zip:pow` is an attribute, with `zip`
+being the 'key' and `pow` being the 'value'. Specifying two attributes might be
+done with a string like `foo:bar fizz:buzz`. An OmegaDoc may have zero
+attributes. There is no limit to the number of attributes an OmegaDoc may have.
+
+An example of an OmegaDoc with zero attributes then is like so:
 
 	#!/usr/bin/env omegadoc <<DELIMIDENT exampleoutput/readme.md
 	Hello I am a markdown document which will be recorded to
@@ -51,3 +58,18 @@ a file:
 
     #!/usr/bin/env omegadoc ignore-this-file
 
+Pieces
+------
+```
+			  Delimiting       Section
+        Magic string      identifier      attribute            Output path
+┌─────────────┴──────────┐┌───┴────┐ ┌────────┴────────┐ ┌──────────┴──────────┐
+#!/usr/bin/env omegadoc <<DELIMIDENT section:foo-section exampleoutput/readme.md
+Hello I am a markdown document which will be recorded to
+a file at the relative path exampleoutput/readme.md. Additionally, if multiple
+OmegaDocs were to have the same output path but different sections, then a
+single file will be written to the output path, but its contents will be
+composed of the contents of each OmegaDoc with that output path concatenated
+together in the order of their "section" labels sorted by lexicographically.
+DELIMIDENT
+```

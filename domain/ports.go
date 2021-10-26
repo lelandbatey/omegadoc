@@ -25,8 +25,17 @@ type DocPlacer interface {
 	PlaceDoc(outpath string, odoc OmegaDoc) error
 }
 
+// Postprocessors act as a kind of "super-middleware", an interface for things
+// which need to accept OmegaDocs and be able to make arbitrary modifications
+// to those OmegaDocs.
 type Postprocessor interface {
 	Postprocess([]OmegaDoc) ([]OmegaDoc, error)
 	Name() string
 	Description() string
+	// Rank is a way for a Postprocessor to indicate it's own "relative
+	// importance" compared to other Postprocessors. There is no inherant
+	// meaning to any number returned by Rank(); it is meant only as a way to
+	// sort a collection of Postprocessors so that you know the other in which
+	// to run them.
+	Rank() int
 }

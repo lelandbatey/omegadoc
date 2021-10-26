@@ -38,7 +38,6 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 	var hash string = ""
 	var gitfilepath string = ""
 	for {
-		//fmt.Printf("start\n")
 		if pth == "/" || pth == "" {
 			break
 		}
@@ -65,7 +64,6 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 		if !isgit {
 			continue
 		}
-		//fmt.Printf("middle\n")
 
 		gitfilepath = strings.TrimPrefix(filepath, pth)
 
@@ -100,7 +98,6 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 				repourl = strings.Replace(remurl, "git:", "https://", 1)
 			}
 		}
-		//fmt.Printf("All the end?\n")
 		break
 	}
 	if repourl != "" && hash != "" && gitfilepath != "" {
@@ -108,5 +105,5 @@ func (guf *gitURLFinder) GetURL(filepath string, lineno int) (string, error) {
 		// start from line 1, not line 0
 		return fmt.Sprintf("%s/tree/%s%s#L%d", repourl, hash, gitfilepath, lineno+1), nil
 	}
-	return "", nil
+	return "", fmt.Errorf("cannot create URL to this file hosted online; file %q probably not in git repo or git repo not configured in way which supports creating HTTP links to files", filepath)
 }
